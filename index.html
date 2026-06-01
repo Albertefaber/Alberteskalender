@@ -591,61 +591,54 @@ function render(){
 
 // ── ICS KALENDER EKSPORT ──
 function exportICS() {
-  const allExport = [...items, ...[...FERIER_2526,...FERIER_2627].map((f,i)=>({
-    id:-1000-i, type:'ferie', titel:f.titel, start:f.start, slut:f.slut, fag:'', note:'Holbæk Kommune ferie'
-  }))];
+  try {
+    const allExport = [...items, ...[...FERIER_2526,...FERIER_2627].map((f,i)=>({
+      id:-1000-i, type:'ferie', titel:f.titel, start:f.start, slut:f.slut, fag:'', note:'Holbæk Kommune ferie'
+    }))];
 
-  function toICSDate(dateStr) {
-    return dateStr.replace(/-/g,'');
+    function toICSDate(dateStr) { return dateStr.replace(/-/g,''); }
+    function toICSDateEnd(dateStr) {
+      const d = parseDate(dateStr);
+      d.setDate(d.getDate()+1);
+      return fmtDate(d).replace(/-/g,'');
+    }
+    function sanitize(str) {
+      return (str||'').replace(/[\r\n]+/g,' ').replace(/,/g,'\\,').replace(/;/g,'\\;');
+    }
+    const catEmoji = {skole:'Skole',studie:'Studie',fritid:'Fritid',moede:'Mode',ferie:'Ferie'};
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Alberte Aarsplan//DA',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+    ];
+    allExport.forEach(it => {
+      const start = toICSDate(it.start);
+      const end = toICSDateEnd(it.slut || it.start);
+      const desc = [it.fag, it.note].filter(Boolean).join(' - ');
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:alberte-' + it.id + '-' + it.start + '@aarsplan');
+      lines.push('DTSTART;VALUE=DATE:' + start);
+      lines.push('DTEND;VALUE=DATE:' + end);
+      lines.push('SUMMARY:[' + catEmoji[it.type] + '] ' + sanitize(it.titel));
+      if(desc) lines.push('DESCRIPTION:' + sanitize(desc));
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+
+    const icsContent = lines.join('\r\n');
+    const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
+    const a = document.createElement('a');
+    a.setAttribute('href', dataUri);
+    a.setAttribute('download', 'alberte-aarsplan.ics');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast('Kalender downloadet! Åbn filen for at importere i Google Kalender ✓');
+  } catch(err) {
+    alert('Fejl: ' + err.message);
   }
-  function toICSDateEnd(dateStr) {
-    // ICS all-day end date is exclusive (next day)
-    const d = parseDate(dateStr);
-    d.setDate(d.getDate()+1);
-    return fmtDate(d).replace(/-/g,'');
-  }
-  function sanitize(str) {
-    return (str||'').replace(/[\n\r]/g,' ').replace(/,/g,'\,').replace(/;/g,'\;');
-  }
-
-  const catEmoji = {skole:'🏫',studie:'📚',fritid:'🌿',moede:'📋',ferie:'🌴'};
-
-  let ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Alberte Årsplan//DA',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'X-WR-CALNAME:Alberte Årsplan',
-    'X-WR-TIMEZONE:Europe/Copenhagen',
-  ];
-
-  allExport.forEach(it => {
-    const emoji = catEmoji[it.type] || '';
-    const start = toICSDate(it.start);
-    const end = toICSDateEnd(it.slut || it.start);
-    const desc = [it.fag, it.note].filter(Boolean).join(' · ');
-    const uid = `alberte-${it.id}-${it.start}@aarsplan`;
-    ics = ics.concat([
-      'BEGIN:VEVENT',
-      `UID:${uid}`,
-      `DTSTART;VALUE=DATE:${start}`,
-      `DTEND;VALUE=DATE:${end}`,
-      `SUMMARY:${emoji} ${sanitize(it.titel)}`,
-      `DESCRIPTION:${sanitize(desc)}`,
-      `CATEGORIES:${sanitize(it.type.toUpperCase())}`,
-      'END:VEVENT',
-    ]);
-  });
-
-  ics.push('END:VCALENDAR');
-
-  const blob = new Blob([ics.join('\r\n')], {type:'text/calendar;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'alberte-aarsplan.ics';
-  a.click();
-  toast('Kalender-fil downloadet! Åbn den for at importere i Google Kalender ✓');
 }
 
 document.addEventListener('keydown',e=>{
