@@ -162,10 +162,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <button class="nav-item" onclick="filterCat('moede')"><div class="nav-dot" style="background:var(--moede)"></div>Møder</button>
     <button class="nav-item" onclick="filterCat('ferie')"><div class="nav-dot" style="background:var(--ferie)"></div>Ferier</button>
   </nav>
-  <button class="add-btn" onclick="openModal()">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Tilføj
-  </button>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto">
+    <button class="add-btn" onclick="openModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tilføj
+    </button>
+    <button class="add-btn" onclick="exportICS()" style="background:#1a73e8">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Eksporter til kalender
+    </button>
+  </div>
 </aside>
 
 <main class="main">
@@ -580,6 +586,66 @@ function switchYearTab(tab){
 }
 function render(){
   updateSidebarDate();renderStats();renderWeek();renderMonthCal();renderYearGrid();
+}
+
+
+// ── ICS KALENDER EKSPORT ──
+function exportICS() {
+  const allExport = [...items, ...[...FERIER_2526,...FERIER_2627].map((f,i)=>({
+    id:-1000-i, type:'ferie', titel:f.titel, start:f.start, slut:f.slut, fag:'', note:'Holbæk Kommune ferie'
+  }))];
+
+  function toICSDate(dateStr) {
+    return dateStr.replace(/-/g,'');
+  }
+  function toICSDateEnd(dateStr) {
+    // ICS all-day end date is exclusive (next day)
+    const d = parseDate(dateStr);
+    d.setDate(d.getDate()+1);
+    return fmtDate(d).replace(/-/g,'');
+  }
+  function sanitize(str) {
+    return (str||'').replace(/[\n\r]/g,' ').replace(/,/g,'\,').replace(/;/g,'\;');
+  }
+
+  const catEmoji = {skole:'🏫',studie:'📚',fritid:'🌿',moede:'📋',ferie:'🌴'};
+
+  let ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Alberte Årsplan//DA',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Alberte Årsplan',
+    'X-WR-TIMEZONE:Europe/Copenhagen',
+  ];
+
+  allExport.forEach(it => {
+    const emoji = catEmoji[it.type] || '';
+    const start = toICSDate(it.start);
+    const end = toICSDateEnd(it.slut || it.start);
+    const desc = [it.fag, it.note].filter(Boolean).join(' · ');
+    const uid = `alberte-${it.id}-${it.start}@aarsplan`;
+    ics = ics.concat([
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTART;VALUE=DATE:${start}`,
+      `DTEND;VALUE=DATE:${end}`,
+      `SUMMARY:${emoji} ${sanitize(it.titel)}`,
+      `DESCRIPTION:${sanitize(desc)}`,
+      `CATEGORIES:${sanitize(it.type.toUpperCase())}`,
+      'END:VEVENT',
+    ]);
+  });
+
+  ics.push('END:VCALENDAR');
+
+  const blob = new Blob([ics.join('\r\n')], {type:'text/calendar;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'alberte-aarsplan.ics';
+  a.click();
+  toast('Kalender-fil downloadet! Åbn den for at importere i Google Kalender ✓');
 }
 
 document.addEventListener('keydown',e=>{
