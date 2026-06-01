@@ -592,20 +592,32 @@ function render(){
 // ── ICS KALENDER EKSPORT ──
 function exportICS() {
   try {
-    const allExport = [...items, ...[...FERIER_2526,...FERIER_2627].map((f,i)=>({
-      id:-1000-i, type:'ferie', titel:f.titel, start:f.start, slut:f.slut, fag:'', note:'Holbæk Kommune ferie'
-    }))];
+    const ferieItems = [...FERIER_2526,...FERIER_2627].map(function(f,i){
+      return {id:-1000-i, type:'ferie', titel:f.titel, start:f.start, slut:f.slut, fag:'', note:'Holbæk Kommune ferie'};
+    });
+    const allExport = items.concat(ferieItems);
 
-    function toICSDate(dateStr) { return dateStr.replace(/-/g,''); }
+    function toICSDate(dateStr) {
+      if(!dateStr) return '';
+      return dateStr.replace(/-/g,'');
+    }
     function toICSDateEnd(dateStr) {
-      const d = parseDate(dateStr);
+      if(!dateStr) return '';
+      const parts = dateStr.split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
       d.setDate(d.getDate()+1);
-      return fmtDate(d).replace(/-/g,'');
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return y+''+m+''+day;
     }
     function sanitize(str) {
-      return (str||'').replace(/[\r\n]+/g,' ').replace(/,/g,'\\,').replace(/;/g,'\\;');
+      if(!str) return '';
+      return String(str).replace(/
+?
+/g,' ').replace(/,/g,'\,').replace(/;/g,'\;');
     }
-    const catEmoji = {skole:'Skole',studie:'Studie',fritid:'Fritid',moede:'Mode',ferie:'Ferie'};
+    const catLabel = {skole:'Skole',studie:'Studie',fritid:'Fritid',moede:'Moede',ferie:'Ferie'};
     const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -613,31 +625,35 @@ function exportICS() {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
     ];
-    allExport.forEach(it => {
-      const start = toICSDate(it.start);
-      const end = toICSDateEnd(it.slut || it.start);
+    allExport.forEach(function(it) {
+      if(!it.start) return;
+      const startStr = toICSDate(it.start);
+      const endStr = toICSDateEnd(it.slut || it.start);
       const desc = [it.fag, it.note].filter(Boolean).join(' - ');
+      const label = catLabel[it.type] || '';
       lines.push('BEGIN:VEVENT');
-      lines.push('UID:alberte-' + it.id + '-' + it.start + '@aarsplan');
-      lines.push('DTSTART;VALUE=DATE:' + start);
-      lines.push('DTEND;VALUE=DATE:' + end);
-      lines.push('SUMMARY:[' + catEmoji[it.type] + '] ' + sanitize(it.titel));
+      lines.push('UID:alberte-' + String(it.id) + '-' + it.start + '@aarsplan');
+      lines.push('DTSTART;VALUE=DATE:' + startStr);
+      lines.push('DTEND;VALUE=DATE:' + endStr);
+      lines.push('SUMMARY:[' + label + '] ' + sanitize(it.titel));
       if(desc) lines.push('DESCRIPTION:' + sanitize(desc));
       lines.push('END:VEVENT');
     });
     lines.push('END:VCALENDAR');
 
-    const icsContent = lines.join('\r\n');
-    const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
+    const icsContent = lines.join('
+');
+    const blob = new Blob([icsContent], {type:'text/calendar'});
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.setAttribute('href', dataUri);
-    a.setAttribute('download', 'alberte-aarsplan.ics');
+    a.href = url;
+    a.download = 'alberte-aarsplan.ics';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    toast('Kalender downloadet! Åbn filen for at importere i Google Kalender ✓');
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    toast('Kalender downloadet! Importer filen i Google Kalender ✓');
   } catch(err) {
-    alert('Fejl: ' + err.message);
+    alert('Fejl ved eksport: ' + err.message);
   }
 }
 
