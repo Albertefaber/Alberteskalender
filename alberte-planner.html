@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alberte — Årsplan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F5F0; --surface: #FFFFFF; --surface2: #F0EDE8; --border: #E2DDD6;
+  --text: #1A1816; --text-muted: #8A8480; --text-faint: #B8B4AF;
+  --skole:  #2D5A4E; --skole-light:  #EAF2EF; --skole-text:  #1E3E36;
+  --studie: #4A3728; --studie-light: #F5EDE6; --studie-text: #32261C;
+  --fritid: #3D3660; --fritid-light: #EEEDF7; --fritid-text: #2A2444;
+  --moede:  #7A2D2D; --moede-light:  #F7EAEA; --moede-text:  #5A2020;
+  --ferie:  #1D6A8C; --ferie-light:  #E5F2F8; --ferie-text:  #124A63;
+  --accent: #C4722A; --radius: 14px; --radius-sm: 8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+
+.sidebar{background:var(--text);color:#F7F5F0;padding:1.75rem 1.25rem;display:flex;flex-direction:column;gap:1.5rem;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-name{font-family:'DM Serif Display',serif;font-size:20px;color:#F7F5F0;line-height:1.2}
+.sidebar-name span{color:var(--accent);font-style:italic}
+.sidebar-date{font-size:11px;color:#666360;margin-top:3px}
+.sync-indicator{display:flex;align-items:center;gap:6px;font-size:11px;padding:7px 10px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);margin-top:4px}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#666}
+.sync-dot.ok{background:#4CAF50}
+.sync-dot.syncing{background:#FFC107;animation:pulse 1s infinite}
+.sync-dot.error{background:#F44336}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav-label{font-size:10px;letter-spacing:.12em;color:#555250;text-transform:uppercase;font-weight:500;margin-bottom:3px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius-sm);font-size:13px;color:#B8B4AF;cursor:pointer;transition:all .15s;border:none;background:none;text-align:left;width:100%}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#F7F5F0}
+.nav-item.active{background:rgba(255,255,255,.11);color:#F7F5F0;font-weight:500}
+.nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.add-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;margin-top:auto}
+.add-btn:hover{background:#B5631F}
+
+.main{padding:1.75rem 2rem;overflow-y:auto}
+.page{display:none}.page.active{display:block}
+.dash-title{font-family:'DM Serif Display',serif;font-size:30px;line-height:1.1}
+.dash-title em{color:var(--accent);font-style:italic}
+.dash-sub{font-size:13px;color:var(--text-muted);margin-top:5px;margin-bottom:1.5rem}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.75rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat-n{font-family:'DM Serif Display',serif;font-size:28px}
+.stat-l{font-size:11px;color:var(--text-muted);margin-top:1px}
+
+.section-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:2rem}
+.day-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 8px;min-height:150px;transition:box-shadow .15s}
+.day-col.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.day-name{font-size:10px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.day-num{font-family:'DM Serif Display',serif;font-size:20px;margin:2px 0 7px}
+.day-col.today .day-num{color:var(--accent)}
+.day-events{display:flex;flex-direction:column;gap:3px}
+.day-event{font-size:10px;padding:3px 6px;border-radius:5px;line-height:1.3;cursor:pointer}
+.day-event:hover{opacity:.8}
+
+.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.month-nav .section-label{flex:1;margin-bottom:0}
+.nav-arrow{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-muted);transition:all .1s}
+.nav-arrow:hover{background:var(--surface2);color:var(--text)}
+
+.month-grid-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1rem}
+.cal-header{background:var(--surface2);padding:7px 8px;font-size:10px;font-weight:500;color:var(--text-muted);text-align:center;text-transform:uppercase;letter-spacing:.06em}
+.cal-day{background:var(--surface);padding:6px 7px;min-height:72px;cursor:pointer;transition:background .1s}
+.cal-day:hover{background:var(--surface2)}
+.cal-day.other-month{background:#FAFAF8}
+.cal-day.other-month .cal-day-num{color:var(--text-faint)}
+.cal-day.today-cal{background:#FFFBF7}
+.cal-day.today-cal .cal-day-num{color:var(--accent);font-weight:500}
+.cal-day.ferie-day{background:#EEF7FB}
+.cal-day-num{font-size:12px;margin-bottom:3px}
+.cal-events{display:flex;flex-direction:column;gap:2px}
+.cal-event{font-size:9px;padding:2px 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.year-tabs{display:flex;gap:6px;margin-bottom:1rem}
+.year-tab{padding:6px 14px;font-size:13px;border:1px solid var(--border);border-radius:99px;background:none;cursor:pointer;color:var(--text-muted);font-family:'DM Sans',sans-serif;transition:all .15s}
+.year-tab.active{background:var(--text);color:#F7F5F0;border-color:var(--text)}
+.year-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.year-month{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;min-height:120px}
+.year-month-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.year-month-name{font-family:'DM Serif Display',serif;font-size:16px}
+.year-month-weeks{font-size:10px;color:var(--text-faint)}
+.year-items{display:flex;flex-direction:column;gap:3px}
+.year-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 7px;border-radius:5px;cursor:pointer}
+.year-item:hover{opacity:.8}
+.year-item-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.year-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.year-item-tag{font-size:10px;opacity:.65;flex-shrink:0}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:var(--radius);padding:1.75rem;width:400px;max-width:95vw;transform:translateY(12px);transition:transform .2s;max-height:90vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-title{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:1.25rem}
+.form-row{margin-bottom:12px}
+.form-row label{display:block;font-size:11px;color:var(--text-muted);font-weight:500;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 11px;font-size:13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;transition:border-color .15s}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--accent)}
+.form-row textarea{height:60px;resize:vertical}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)}
+.btn-cancel{padding:8px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);transition:all .15s}
+.btn-cancel:hover{background:var(--surface2);color:var(--text)}
+.btn-save{padding:8px 18px;border:none;border-radius:var(--radius-sm);background:var(--text);color:#F7F5F0;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .15s}
+.btn-save:hover{background:var(--accent)}
+.btn-delete{padding:8px 12px;border:1px solid #F7EAEA;border-radius:var(--radius-sm);background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--moede);margin-right:auto;transition:all .15s}
+.btn-delete:hover{background:var(--moede-light)}
+.type-chips{display:flex;gap:5px;flex-wrap:wrap}
+.type-chip{padding:5px 12px;border-radius:99px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;font-family:'DM Sans',sans-serif;color:var(--text-muted)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--text);color:#F7F5F0;padding:9px 18px;border-radius:99px;font-size:12px;z-index:200;opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.empty{font-size:11px;color:var(--text-faint);font-style:italic;padding:3px 0}
+
+@media(max-width:800px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;flex-direction:row;flex-wrap:wrap;padding:1rem}
+  .week-grid{grid-template-columns:repeat(4,1fr)}
+  .year-grid{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div>
+    <div class="sidebar-name">Alberte<br><span>Årsplan</span></div>
+    <div class="sidebar-date" id="sidebar-date"></div>
+    <div class="sync-indicator">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-status">Forbinder...</span>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Oversigt</div>
+    <button class="nav-item active" onclick="goTo('dashboard')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="goTo('aarsplan')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Årsplan
+    </button>
+    <div class="nav-label">Kategorier</div>
+    <button class="nav-item" onclick="filterCat('skole')"><div class="nav-dot" style="background:var(--skole)"></div>Skole</button>
+    <button class="nav-item" onclick="filterCat('studie')"><div class="nav-dot" style="background:var(--studie)"></div>Læreruddannelsen</button>
+    <button class="nav-item" onclick="filterCat('fritid')"><div class="nav-dot" style="background:var(--fritid)"></div>Fritid</button>
+    <button class="nav-item" onclick="filterCat('moede')"><div class="nav-dot" style="background:var(--moede)"></div>Møder</button>
+    <button class="nav-item" onclick="filterCat('ferie')"><div class="nav-dot" style="background:var(--ferie)"></div>Ferier</button>
+  </nav>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto">
+    <button class="add-btn" onclick="openModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Tilføj
+    </button>
+    <button class="add-btn" onclick="exportICS()" style="background:#1a73e8">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Eksporter til kalender
+    </button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page active" id="page-dashboard">
+    <div class="dash-title">God <em>dag,</em> Alberte</div>
+    <div class="dash-sub" id="dash-sub"></div>
+    <div class="stats-row" id="stats-row"></div>
+    <div class="section-label">Denne uge</div>
+    <div class="week-grid" id="week-grid"></div>
+    <div class="month-nav">
+      <div class="section-label" style="flex:1;margin-bottom:0" id="month-label-dash"></div>
+      <button class="nav-arrow" onclick="changeMonth(-1)">&#8592;</button>
+      <button class="nav-arrow" onclick="changeMonth(1)">&#8594;</button>
+    </div>
+    <div class="month-grid-cal" id="month-cal"></div>
+  </div>
+
+  <div class="page" id="page-aarsplan">
+    <div class="dash-title">Årsplan</div>
+    <div class="dash-sub">Skoleår, studieforløb og vigtige datoer — inkl. Holbæk Kommune ferier</div>
+    <div class="year-tabs">
+      <button class="year-tab active" onclick="switchYearTab('2526')">2025–26</button>
+      <button class="year-tab" onclick="switchYearTab('2627')">2026–27</button>
+    </div>
+    <div class="year-grid" id="year-grid"></div>
+  </div>
+</main>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Tilføj</div>
+    <div class="form-row">
+      <label>Kategori</label>
+      <div class="type-chips" id="type-chips">
+        <div class="type-chip" data-type="skole" onclick="selectType('skole')">Skole</div>
+        <div class="type-chip" data-type="studie" onclick="selectType('studie')">Studie</div>
+        <div class="type-chip" data-type="fritid" onclick="selectType('fritid')">Fritid</div>
+        <div class="type-chip" data-type="moede" onclick="selectType('moede')">Møde</div>
+      </div>
+    </div>
+    <div class="form-row"><label>Titel</label><input type="text" id="f-titel" placeholder="fx Valhalla-forløb, eksamen, Molly-tur..."></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Startdato</label><input type="date" id="f-start"></div>
+      <div class="form-row"><label>Slutdato</label><input type="date" id="f-slut"></div>
+    </div>
+    <div class="form-row" id="row-fag" style="display:none">
+      <label>Fag</label>
+      <select id="f-fag">
+        <option value="">— vælg fag —</option>
+        <option>Matematik</option><option>Historie</option><option>Kristendomskundskab</option>
+        <option>Natur/teknologi</option><option>Idræt</option><option>Dansk</option><option>Engelsk</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Note</label><textarea id="f-note" placeholder="Materialer, sted, kontakt..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="btn-delete" style="display:none" onclick="deleteItem()">Slet</button>
+      <button class="btn-cancel" onclick="closeModal()">Annuller</button>
+      <button class="btn-save" onclick="saveItem()">Gem</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BIN_ID = '6a1dd697f5f4af5e29a96dfd';
+    const API_KEY = '$2a$10$HOboKcjEBs.49AjG1RwA0Ot7AJgev8H49spOus1UnNe0JSD4It7f6';
+
+const CATS = {
+  skole:  {label:'Skole',   bg:'#EAF2EF',text:'#1E3E36',dot:'#2D5A4E'},
+  studie: {label:'Studie',  bg:'#F5EDE6',text:'#32261C',dot:'#4A3728'},
+  fritid: {label:'Fritid',  bg:'#EEEDF7',text:'#2A2444',dot:'#3D3660'},
+  moede:  {label:'Møde',    bg:'#F7EAEA',text:'#5A2020',dot:'#7A2D2D'},
+  ferie:  {label:'Ferie',   bg:'#E5F2F8',text:'#124A63',dot:'#1D6A8C'},
+};
+const DAYS_DA = ['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+const MONTHS_DA = ['Januar','Februar','Marts','April','Maj','Juni','Juli','August','September','Oktober','November','December'];
+
+const FERIER_2526 = [
+  {titel:'Efterårsferie',        start:'2025-10-11',slut:'2025-10-19'},
+  {titel:'Juleferie',            start:'2025-12-20',slut:'2026-01-04'},
+  {titel:'Vinterferie',          start:'2026-02-07',slut:'2026-02-15'},
+  {titel:'Påskeferie',           start:'2026-03-28',slut:'2026-04-06'},
+  {titel:'Kr. Himmelfartsferie', start:'2026-05-14',slut:'2026-05-17'},
+  {titel:'Pinseferie',           start:'2026-05-23',slut:'2026-05-25'},
+  {titel:'Grundlovsdag',         start:'2026-06-05',slut:'2026-06-05'},
+  {titel:'Sommerferie',          start:'2026-06-27',slut:'2026-08-10'},
+];
+const FERIER_2627 = [
+  {titel:'Efterårsferie',        start:'2026-10-10',slut:'2026-10-18'},
+  {titel:'Juleferie',            start:'2026-12-19',slut:'2027-01-03'},
+  {titel:'Vinterferie',          start:'2027-02-13',slut:'2027-02-21'},
+  {titel:'Påskeferie',           start:'2027-03-20',slut:'2027-03-29'},
+  {titel:'Kr. Himmelfartsferie', start:'2027-05-06',slut:'2027-05-09'},
+  {titel:'Pinseferie',           start:'2027-05-15',slut:'2027-05-17'},
+  {titel:'Sommerferie',          start:'2027-06-26',slut:'2027-08-09'},
+];
+const SKOLEAAR = {
+  '2526':[
+    {m:'August',y:2025,mi:7},{m:'September',y:2025,mi:8},{m:'Oktober',y:2025,mi:9},
+    {m:'November',y:2025,mi:10},{m:'December',y:2025,mi:11},{m:'Januar',y:2026,mi:0},
+    {m:'Februar',y:2026,mi:1},{m:'Marts',y:2026,mi:2},{m:'April',y:2026,mi:3},
+    {m:'Maj',y:2026,mi:4},{m:'Juni',y:2026,mi:5},
+  ],
+  '2627':[
+    {m:'August',y:2026,mi:7},{m:'September',y:2026,mi:8},{m:'Oktober',y:2026,mi:9},
+    {m:'November',y:2026,mi:10},{m:'December',y:2026,mi:11},{m:'Januar',y:2027,mi:0},
+    {m:'Februar',y:2027,mi:1},{m:'Marts',y:2027,mi:2},{m:'April',y:2027,mi:3},
+    {m:'Maj',y:2027,mi:4},{m:'Juni',y:2027,mi:5},
+  ],
+};
+
+let items = [];
+let nextId = 1;
+let editingId = null;
+let selectedType = 'skole';
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let activeFilter = null;
+let activeYearTab = '2526';
+let syncTimeout = null;
+let lastSyncedJSON = '';
+
+// ── SYNC ──
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-status');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = msg;
+}
+
+async function loadFromCloud() {
+  setSyncStatus('syncing', 'Henter data...');
+  try {
+    const resp = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: {'X-Master-Key': API_KEY}
+    });
+    const data = await resp.json();
+    const parsed = data.record;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      items = parsed;
+      nextId = Math.max(0, ...items.map(i=>i.id)) + 1;
+      lastSyncedJSON = JSON.stringify(items);
+      localStorage.setItem('alberte-items-v3', lastSyncedJSON);
+      setSyncStatus('ok', 'Synkroniseret');
+    } else {
+      const local = localStorage.getItem('alberte-items-v3');
+      if (local) {
+        items = JSON.parse(local);
+        nextId = Math.max(0,...items.map(i=>i.id))+1;
+        await pushToCloud();
+      } else {
+        seedDefaults();
+        await pushToCloud();
+      }
+    }
+  } catch(e) {
+    setSyncStatus('error', 'Offline — lokal tilstand');
+    const local = localStorage.getItem('alberte-items-v3');
+    if (local) { items = JSON.parse(local); nextId = Math.max(0,...items.map(i=>i.id))+1; }
+    else seedDefaults();
+  }
+  render();
+}
+
+async function pushToCloud() {
+  const json = JSON.stringify(items);
+  if (json === lastSyncedJSON) return;
+  setSyncStatus('syncing', 'Gemmer...');
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: json
+    });
+    lastSyncedJSON = json;
+    localStorage.setItem('alberte-items-v3', json);
+    setSyncStatus('ok', 'Gemt ✓');
+  } catch(e) {
+    setSyncStatus('error', 'Kunne ikke gemme');
+    localStorage.setItem('alberte-items-v3', json);
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(pushToCloud, 1500);
+}
+
+function seedDefaults() {
+  items = [
+    {id:1,type:'skole',titel:'Nordiske myter / Valhalla',start:'2025-08-11',slut:'2025-08-29',fag:'Kristendomskundskab',note:'Film + arbejdsark klar'},
+    {id:2,type:'skole',titel:'Procent',start:'2025-09-01',slut:'2025-10-03',fag:'Matematik',note:''},
+    {id:3,type:'skole',titel:'Anden Verdenskrig',start:'2025-10-20',slut:'2025-12-05',fag:'Historie',note:'Gruppepræsentationer uge 49'},
+    {id:4,type:'skole',titel:'Naturcenter-tur',start:'2025-09-19',slut:'2025-09-19',fag:'',note:'Husk tilladelsessedler'},
+    {id:5,type:'studie',titel:'Praktik 1',start:'2025-09-15',slut:'2025-10-10',fag:'',note:''},
+    {id:6,type:'studie',titel:'Eksamen — didaktik',start:'2026-01-12',slut:'2026-01-12',fag:'',note:''},
+    {id:7,type:'fritid',titel:'Molly-tur til stranden',start:'2025-08-16',slut:'2025-08-16',fag:'',note:''},
+    {id:8,type:'moede',titel:'Teammøde',start:'2025-08-11',slut:'2025-08-11',fag:'',note:'Skolen'},
+  ];
+  nextId = 20;
+}
+
+// ── HELPERS ──
+function today(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function parseDate(s){if(!s)return null;const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+function weekNumber(d){const dt=new Date(d);dt.setHours(0,0,0,0);dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);const w1=new Date(dt.getFullYear(),0,4);return 1+Math.round(((dt-w1)/86400000-3+(w1.getDay()+6)%7)/7);}
+
+function allItems(){
+  const fi=[...FERIER_2526,...FERIER_2627].map((f,i)=>({id:-1000-i,type:'ferie',titel:f.titel,start:f.start,slut:f.slut,fag:'',note:'Holbæk Kommune'}));
+  return [...items,...fi];
+}
+function itemsOnDate(date){
+  return allItems().filter(it=>{
+    if(activeFilter&&it.type!==activeFilter)return false;
+    const s=parseDate(it.start),e=parseDate(it.slut)||parseDate(it.start);
+    return s&&date>=s&&date<=e;
+  });
+}
+function isFerieDay(date){
+  return[...FERIER_2526,...FERIER_2627].some(f=>{const s=parseDate(f.start),e=parseDate(f.slut);return s&&date>=s&&date<=e;});
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+
+// ── RENDER ──
+function updateSidebarDate(){
+  const d=new Date();
+  const days=['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  document.getElementById('sidebar-date').textContent=`${days[d.getDay()]} d. ${d.getDate()}. ${MONTHS_DA[d.getMonth()].toLowerCase()}`;
+  document.getElementById('dash-sub').textContent=`Uge ${weekNumber(d)} · ${MONTHS_DA[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function renderStats(){
+  const now=today();
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><div class="stat-n" style="color:var(--accent)">${items.filter(i=>parseDate(i.start)>=now).length}</div><div class="stat-l">Kommende</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--skole)">${items.filter(i=>i.type==='skole').length}</div><div class="stat-l">Skole</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--studie)">${items.filter(i=>i.type==='studie').length}</div><div class="stat-l">Studie</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--fritid)">${items.filter(i=>i.type==='fritid').length}</div><div class="stat-l">Fritid</div></div>
+  `;
+}
+
+function renderWeek(){
+  const now=today();
+  const monday=new Date(now);monday.setDate(now.getDate()-((now.getDay()+6)%7));
+  let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const isToday=sameDay(d,now);
+    const dayItems=itemsOnDate(d);
+    html+=`<div class="day-col${isToday?' today':''}">
+      <div class="day-name">${DAYS_DA[i]}</div>
+      <div class="day-num">${d.getDate()}</div>
+      <div class="day-events">
+        ${dayItems.length?dayItems.map(it=>{
+          const c=CATS[it.type];
+          return `<div class="day-event" style="background:${c.bg};color:${c.text}"${it.id>0?` onclick="editItem(${it.id})"`:''}>${it.titel}</div>`;
+        }).join(''):'<div class="empty">Fri</div>'}
+      </div>
+    </div>`;
+  }
+  document.getElementById('week-grid').innerHTML=html;
+}
+
+function renderMonthCal(){
+  document.getElementById('month-label-dash').textContent=`${MONTHS_DA[currentMonth]} ${currentYear}`;
+  const firstDay=new Date(currentYear,currentMonth,1);
+  let startDow=firstDay.getDay();startDow=startDow===0?6:startDow-1;
+  const daysInMonth=new Date(currentYear,currentMonth+1,0).getDate();
+  const now=today();
+  let html=DAYS_DA.map(d=>`<div class="cal-header">${d}</div>`).join('');
+  let day=1-startDow;
+  for(let row=0;row<6;row++){
+    let rowHtml='';let hasContent=false;
+    for(let col=0;col<7;col++,day++){
+      const d=new Date(currentYear,currentMonth,day);
+      const inMonth=day>=1&&day<=daysInMonth;
+      if(inMonth||row<5){
+        hasContent=true;
+        const isToday=sameDay(d,now);
+        const isFerie=isFerieDay(d);
+        const dayItems=itemsOnDate(d);
+        rowHtml+=`<div class="cal-day${!inMonth?' other-month':''}${isToday?' today-cal':''}${isFerie&&inMonth?' ferie-day':''}" onclick="dayClick('${fmtDate(d)}')">
+          <div class="cal-day-num">${d.getDate()}</div>
+          <div class="cal-events">
+            ${dayItems.slice(0,3).map(it=>{const c=CATS[it.type];return`<div class="cal-event" style="background:${c.bg};color:${c.text}">${it.titel}</div>`;}).join('')}
+            ${dayItems.length>3?`<div style="font-size:9px;color:var(--text-faint)">+${dayItems.length-3}</div>`:''}
+          </div>
+        </div>`;
+      }
+    }
+    if(hasContent)html+=rowHtml;
+  }
+  document.getElementById('month-cal').innerHTML=html;
+}
+
+function renderYearGrid(){
+  const months=SKOLEAAR[activeYearTab];
+  const ferier=activeYearTab==='2526'?FERIER_2526:FERIER_2627;
+  let html='';
+  months.forEach(({m,y,mi})=>{
+    const monthStart=new Date(y,mi,1),monthEnd=new Date(y,mi+1,0);
+    const seen=new Set();
+    const mf=ferier.filter(f=>{const s=parseDate(f.start),e=parseDate(f.slut);return s<=monthEnd&&e>=monthStart;}).map(f=>({...f,type:'ferie',id:-1}));
+    const mi2=items.filter(it=>{
+      if(seen.has(it.id))return false;
+      const s=parseDate(it.start),e=parseDate(it.slut)||parseDate(it.start);
+      if(!s)return false;
+      if(s<=monthEnd&&e>=monthStart){seen.add(it.id);return true;}
+      return false;
+    });
+    const all=[...mf,...mi2].filter(it=>!activeFilter||it.type===activeFilter);
+    const w1=weekNumber(monthStart),w2=weekNumber(monthEnd);
+    html+=`<div class="year-month">
+      <div class="year-month-header">
+        <div class="year-month-name">${m} <span style="font-size:12px;color:var(--text-faint);font-family:'DM Sans',sans-serif">${y}</span></div>
+        <div class="year-month-weeks">uge ${w1}–${w2}</div>
+      </div>
+      <div class="year-items">
+        ${all.length?all.map(it=>{
+          const c=CATS[it.type];
+          const tag=it.type==='ferie'?'Ferie':it.fag?it.fag.split('/')[0]:CATS[it.type].label;
+          return `<div class="year-item" style="background:${c.bg};color:${c.text}"${it.id>0?` onclick="editItem(${it.id})"`:''}><div class="year-item-dot" style="background:${c.dot}"></div><div class="year-item-label">${it.titel}</div><div class="year-item-tag">${tag}</div></div>`;
+        }).join(''):'<div class="empty">Intet planlagt</div>'}
+      </div>
+    </div>`;
+  });
+  document.getElementById('year-grid').innerHTML=html;
+}
+
+// ── MODAL ──
+function openModal(prefillDate){
+  editingId=null;
+  document.getElementById('modal-title').textContent='Tilføj';
+  document.getElementById('btn-delete').style.display='none';
+  document.getElementById('f-titel').value='';
+  document.getElementById('f-start').value=prefillDate||fmtDate(today());
+  document.getElementById('f-slut').value=prefillDate||fmtDate(today());
+  document.getElementById('f-fag').value='';
+  document.getElementById('f-note').value='';
+  selectType('skole');
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-titel').focus(),200);
+}
+function editItem(id){
+  const it=items.find(i=>i.id===id);if(!it)return;
+  editingId=id;
+  document.getElementById('modal-title').textContent='Rediger';
+  document.getElementById('btn-delete').style.display='inline-flex';
+  document.getElementById('f-titel').value=it.titel;
+  document.getElementById('f-start').value=it.start;
+  document.getElementById('f-slut').value=it.slut||it.start;
+  document.getElementById('f-fag').value=it.fag||'';
+  document.getElementById('f-note').value=it.note||'';
+  selectType(it.type);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function selectType(t){
+  selectedType=t;
+  document.querySelectorAll('.type-chip').forEach(el=>{
+    const c=CATS[el.dataset.type];
+    if(el.dataset.type===t){el.classList.add('selected');el.style.background=c.bg;el.style.color=c.text;el.style.borderColor=c.dot;}
+    else{el.classList.remove('selected');el.style.background='';el.style.color='var(--text-muted)';el.style.borderColor='var(--border)';}
+  });
+  document.getElementById('row-fag').style.display=t==='skole'?'block':'none';
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function closeModalOutside(e){if(e.target.id==='modal-overlay')closeModal();}
+function saveItem(){
+  const titel=document.getElementById('f-titel').value.trim();
+  if(!titel){document.getElementById('f-titel').focus();return;}
+  const start=document.getElementById('f-start').value;
+  const slut=document.getElementById('f-slut').value;
+  const obj={id:editingId||nextId++,type:selectedType,titel,start,slut:slut||start,fag:document.getElementById('f-fag').value,note:document.getElementById('f-note').value.trim()};
+  if(editingId){items=items.map(i=>i.id===editingId?obj:i);}else{items.push(obj);}
+  closeModal();render();scheduleSave();
+  toast(editingId?'Gemt ✓':'Tilføjet ✓');
+}
+function deleteItem(){
+  if(!confirm('Slet dette punkt?'))return;
+  items=items.filter(i=>i.id!==editingId);
+  closeModal();render();scheduleSave();
+  toast('Slettet');
+}
+function dayClick(dateStr){openModal(dateStr);}
+function changeMonth(dir){
+  currentMonth+=dir;
+  if(currentMonth>11){currentMonth=0;currentYear++;}
+  if(currentMonth<0){currentMonth=11;currentYear--;}
+  renderMonthCal();
+}
+function goTo(page){
+  activeFilter=null;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const map={dashboard:0,aarsplan:1};
+  document.querySelectorAll('.nav-item')[map[page]]?.classList.add('active');
+  render();
+}
+function filterCat(type){activeFilter=activeFilter===type?null:type;render();}
+function switchYearTab(tab){
+  activeYearTab=tab;
+  document.querySelectorAll('.year-tab').forEach((el,i)=>el.classList.toggle('active',['2526','2627'][i]===tab));
+  renderYearGrid();
+}
+function render(){
+  updateSidebarDate();renderStats();renderWeek();renderMonthCal();renderYearGrid();
+}
+
+
+// ── ICS KALENDER EKSPORT ──
+function exportICS() {
+  try {
+    const ferieItems = [...FERIER_2526,...FERIER_2627].map(function(f,i){
+      return {id:-1000-i, type:'ferie', titel:f.titel, start:f.start, slut:f.slut, fag:'', note:'Holbæk Kommune ferie'};
+    });
+    const allExport = items.concat(ferieItems);
+
+    function toICSDate(dateStr) {
+      if(!dateStr) return '';
+      return String(dateStr).replace(/-/g,'');
+    }
+    function toICSDateEnd(dateStr) {
+      if(!dateStr) return '';
+      const parts = String(dateStr).split('-');
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+      d.setDate(d.getDate()+1);
+      return String(d.getFullYear()) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+    }
+    function san(str) {
+      return String(str||'').replace(/?
+/g,' ').replace(/,/g,'\,').replace(/;/g,'\;');
+    }
+    const catLabel = {skole:'Skole',studie:'Studie',fritid:'Fritid',moede:'Moede',ferie:'Ferie'};
+    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Alberte//DA','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+    allExport.forEach(function(it) {
+      if(!it || !it.start) return;
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:alberte-' + String(it.id||0) + '@aarsplan');
+      lines.push('DTSTART;VALUE=DATE:' + toICSDate(it.start));
+      lines.push('DTEND;VALUE=DATE:' + toICSDateEnd(it.slut || it.start));
+      lines.push('SUMMARY:[' + (catLabel[it.type]||'') + '] ' + san(it.titel));
+      lines.push('END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+
+    const txt = lines.join('
+');
+    const encoded = encodeURIComponent(txt);
+    const a = document.createElement('a');
+    a.href = 'data:text/calendar;charset=utf-8,' + encoded;
+    a.download = 'alberte-aarsplan.ics';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast('Kalender-fil hentet! Åbn den og importer i Google Kalender ✓');
+  } catch(err) {
+    alert('Fejl: ' + err.message);
+  }
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModal();
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openModal();}
+});
+
+currentMonth=new Date().getMonth();
+currentYear=new Date().getFullYear();
+loadFromCloud();
+</script>
+</body>
+</html>
