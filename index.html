@@ -305,59 +305,22 @@ function setSyncStatus(state, msg) {
 }
 
 async function loadFromCloud() {
-  setSyncStatus('syncing', 'Henter data...');
-  try {
-    const resp = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: {'X-Master-Key': API_KEY}
-    });
-    const data = await resp.json();
-    const parsed = data.record;
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      items = parsed;
-      nextId = Math.max(0, ...items.map(i=>i.id)) + 1;
-      lastSyncedJSON = JSON.stringify(items);
-      localStorage.setItem('alberte-items-v3', lastSyncedJSON);
-      setSyncStatus('ok', 'Synkroniseret');
-    } else {
-      const local = localStorage.getItem('alberte-items-v3');
-      if (local) {
-        items = JSON.parse(local);
-        nextId = Math.max(0,...items.map(i=>i.id))+1;
-        await pushToCloud();
-      } else {
-        seedDefaults();
-        await pushToCloud();
-      }
-    }
-  } catch(e) {
-    setSyncStatus('error', 'Offline — lokal tilstand');
-    const local = localStorage.getItem('alberte-items-v3');
-    if (local) { items = JSON.parse(local); nextId = Math.max(0,...items.map(i=>i.id))+1; }
-    else seedDefaults();
+  setSyncStatus('ok', 'Klar');
+  const local = localStorage.getItem('alberte-items-v3');
+  if (local) {
+    try {
+      items = JSON.parse(local);
+      nextId = Math.max(0,...items.map(i=>i.id))+1;
+    } catch(e) { seedDefaults(); }
+  } else {
+    seedDefaults();
   }
   render();
 }
 
 async function pushToCloud() {
-  const json = JSON.stringify(items);
-  if (json === lastSyncedJSON) return;
-  setSyncStatus('syncing', 'Gemmer...');
-  try {
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY
-      },
-      body: json
-    });
-    lastSyncedJSON = json;
-    localStorage.setItem('alberte-items-v3', json);
-    setSyncStatus('ok', 'Gemt ✓');
-  } catch(e) {
-    setSyncStatus('error', 'Kunne ikke gemme');
-    localStorage.setItem('alberte-items-v3', json);
-  }
+  localStorage.setItem('alberte-items-v3', JSON.stringify(items));
+  setSyncStatus('ok', 'Gemt ✓');
 }
 
 function scheduleSave() {
