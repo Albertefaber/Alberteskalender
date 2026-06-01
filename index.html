@@ -232,7 +232,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0VPK-LLTiUrcCXA8YL6sY8GUqlbknoF8_M5u5GgOaf5XqDcnExX4h2HFa4KswP5RafA/exec';
+const BIN_ID = '6a1dd697f5f4af5e29a96dfd';
+    const API_KEY = '$2a$10$HOboKcjEBs.49AjG1RwA0Ot7AJgev8H49spOus1UnNe0JSD4It7f6';
 
 const CATS = {
   skole:  {label:'Skole',   bg:'#EAF2EF',text:'#1E3E36',dot:'#2D5A4E'},
@@ -300,9 +301,11 @@ function setSyncStatus(state, msg) {
 async function loadFromCloud() {
   setSyncStatus('syncing', 'Henter data...');
   try {
-    const resp = await fetch(SCRIPT_URL, {method:'GET', redirect:'follow'});
-    const text = await resp.text();
-    const parsed = JSON.parse(text);
+    const resp = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: {'X-Master-Key': API_KEY}
+    });
+    const data = await resp.json();
+    const parsed = data.record;
     if (Array.isArray(parsed) && parsed.length > 0) {
       items = parsed;
       nextId = Math.max(0, ...items.map(i=>i.id)) + 1;
@@ -310,7 +313,6 @@ async function loadFromCloud() {
       localStorage.setItem('alberte-items-v3', lastSyncedJSON);
       setSyncStatus('ok', 'Synkroniseret');
     } else {
-      // Cloud empty — push local if we have any
       const local = localStorage.getItem('alberte-items-v3');
       if (local) {
         items = JSON.parse(local);
@@ -335,10 +337,13 @@ async function pushToCloud() {
   if (json === lastSyncedJSON) return;
   setSyncStatus('syncing', 'Gemmer...');
   try {
-    await fetch(SCRIPT_URL, {
-      method:'POST',
-      body: json,
-      redirect: 'follow',
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: json
     });
     lastSyncedJSON = json;
     localStorage.setItem('alberte-items-v3', json);
