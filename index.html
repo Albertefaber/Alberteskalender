@@ -599,61 +599,46 @@ function exportICS() {
 
     function toICSDate(dateStr) {
       if(!dateStr) return '';
-      return dateStr.replace(/-/g,'');
+      return String(dateStr).replace(/-/g,'');
     }
     function toICSDateEnd(dateStr) {
       if(!dateStr) return '';
-      const parts = dateStr.split('-');
+      const parts = String(dateStr).split('-');
       const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
       d.setDate(d.getDate()+1);
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,'0');
-      const day = String(d.getDate()).padStart(2,'0');
-      return y+''+m+''+day;
+      return String(d.getFullYear()) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
     }
-    function sanitize(str) {
-      if(!str) return '';
-      return String(str).replace(/
+    function san(str) {
+      return String(str||'').replace(/
 ?
 /g,' ').replace(/,/g,'\,').replace(/;/g,'\;');
     }
     const catLabel = {skole:'Skole',studie:'Studie',fritid:'Fritid',moede:'Moede',ferie:'Ferie'};
-    const lines = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Alberte Aarsplan//DA',
-      'CALSCALE:GREGORIAN',
-      'METHOD:PUBLISH',
-    ];
+    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Alberte//DA','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
     allExport.forEach(function(it) {
-      if(!it.start) return;
-      const startStr = toICSDate(it.start);
-      const endStr = toICSDateEnd(it.slut || it.start);
-      const desc = [it.fag, it.note].filter(Boolean).join(' - ');
-      const label = catLabel[it.type] || '';
+      if(!it || !it.start) return;
       lines.push('BEGIN:VEVENT');
-      lines.push('UID:alberte-' + String(it.id) + '-' + it.start + '@aarsplan');
-      lines.push('DTSTART;VALUE=DATE:' + startStr);
-      lines.push('DTEND;VALUE=DATE:' + endStr);
-      lines.push('SUMMARY:[' + label + '] ' + sanitize(it.titel));
-      if(desc) lines.push('DESCRIPTION:' + sanitize(desc));
+      lines.push('UID:alberte-' + String(it.id||0) + '@aarsplan');
+      lines.push('DTSTART;VALUE=DATE:' + toICSDate(it.start));
+      lines.push('DTEND;VALUE=DATE:' + toICSDateEnd(it.slut || it.start));
+      lines.push('SUMMARY:[' + (catLabel[it.type]||'') + '] ' + san(it.titel));
       lines.push('END:VEVENT');
     });
     lines.push('END:VCALENDAR');
 
-    const icsContent = lines.join('
+    const txt = lines.join('
 ');
-    const blob = new Blob([icsContent], {type:'text/calendar'});
-    const url = URL.createObjectURL(blob);
+    const encoded = encodeURIComponent(txt);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = 'data:text/calendar;charset=utf-8,' + encoded;
     a.download = 'alberte-aarsplan.ics';
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-    toast('Kalender downloadet! Importer filen i Google Kalender ✓');
+    document.body.removeChild(a);
+    toast('Kalender-fil hentet! Åbn den og importer i Google Kalender ✓');
   } catch(err) {
-    alert('Fejl ved eksport: ' + err.message);
+    alert('Fejl: ' + err.message);
   }
 }
 
